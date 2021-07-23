@@ -1,0 +1,13 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "hello-graphql:lib"
+
+    - path: "./app/Main.hs"
+      component: "hello-graphql:exe:hello-graphql-exe"
+
+    - path: "./app/Paths_hello_graphql.hs"
+      component: "hello-graphql:exe:hello-graphql-exe"
+
+    - path: "./test"
+      component: "hello-graphql:test:hello-graphql-test"
