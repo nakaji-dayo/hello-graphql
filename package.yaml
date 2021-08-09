@@ -25,6 +25,7 @@ dependencies:
 - text
 - morpheus-graphql
 - scotty
+- haxl
 
 library:
   source-dirs: src
