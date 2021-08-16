@@ -26,6 +26,20 @@ dependencies:
 - morpheus-graphql
 - scotty
 - haxl
+- hashable
+- microlens
+- generic-lens
+- HDBC
+- postgresql-pure
+- HDBC-session
+- resource-pool
+- persistable-record
+- relational-record
+- relational-query-HDBC
+- template-haskell
+- data-default-class
+
+
 
 library:
   source-dirs: src

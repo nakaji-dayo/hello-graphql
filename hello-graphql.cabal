@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a7f508737905a8998d2a56e4e3a56e9490f1676f313d891844fa4025937af7c3
+-- hash: 91ed6290016b6e29bde8dd12aba797ff42bb4cd8177f67dfc65b6c22ab1af400
 
 name:           hello-graphql
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Api
+      DataSource
       Haxl
       Lib
       MNative
@@ -36,11 +37,23 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      HDBC
+    , HDBC-session
+    , base >=4.7 && <5
     , bytestring
+    , data-default-class
+    , generic-lens
+    , hashable
     , haxl
+    , microlens
     , morpheus-graphql
+    , persistable-record
+    , postgresql-pure
+    , relational-query-HDBC
+    , relational-record
+    , resource-pool
     , scotty
+    , template-haskell
     , text
   default-language: Haskell2010
 
@@ -52,12 +65,24 @@ executable hello-graphql-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HDBC
+    , HDBC-session
+    , base >=4.7 && <5
     , bytestring
+    , data-default-class
+    , generic-lens
+    , hashable
     , haxl
     , hello-graphql
+    , microlens
     , morpheus-graphql
+    , persistable-record
+    , postgresql-pure
+    , relational-query-HDBC
+    , relational-record
+    , resource-pool
     , scotty
+    , template-haskell
     , text
   default-language: Haskell2010
 
@@ -70,11 +95,23 @@ test-suite hello-graphql-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HDBC
+    , HDBC-session
+    , base >=4.7 && <5
     , bytestring
+    , data-default-class
+    , generic-lens
+    , hashable
     , haxl
     , hello-graphql
+    , microlens
     , morpheus-graphql
+    , persistable-record
+    , postgresql-pure
+    , relational-query-HDBC
+    , relational-record
+    , resource-pool
     , scotty
+    , template-haskell
     , text
   default-language: Haskell2010
