@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 91ed6290016b6e29bde8dd12aba797ff42bb4cd8177f67dfc65b6c22ab1af400
+-- hash: 9aeae67632a666a92931cd0c06303ec78e138c63b8b3d4a9217795a4dacfadbc
 
 name:           hello-graphql
 version:        0.1.0.0
@@ -28,10 +28,16 @@ source-repository head
 library
   exposed-modules:
       Api
+      App
       DataSource
+      Entity
+      Entity.Beer
+      Entity.Store
+      EntityId
       Haxl
       Lib
       MNative
+      Seed
   other-modules:
       Paths_hello_graphql
   hs-source-dirs:
@@ -41,20 +47,27 @@ library
     , HDBC-session
     , base >=4.7 && <5
     , bytestring
+    , capability
     , data-default-class
+    , exceptions
     , generic-lens
     , hashable
     , haxl
     , microlens
+    , monad-control
     , morpheus-graphql
+    , mtl
     , persistable-record
     , postgresql-pure
+    , relational-query
     , relational-query-HDBC
     , relational-record
     , resource-pool
     , scotty
     , template-haskell
     , text
+    , transformers-base
+    , uuid
   default-language: Haskell2010
 
 executable hello-graphql-exe
@@ -69,27 +82,35 @@ executable hello-graphql-exe
     , HDBC-session
     , base >=4.7 && <5
     , bytestring
+    , capability
     , data-default-class
+    , exceptions
     , generic-lens
     , hashable
     , haxl
     , hello-graphql
     , microlens
+    , monad-control
     , morpheus-graphql
+    , mtl
     , persistable-record
     , postgresql-pure
+    , relational-query
     , relational-query-HDBC
     , relational-record
     , resource-pool
     , scotty
     , template-haskell
     , text
+    , transformers-base
+    , uuid
   default-language: Haskell2010
 
 test-suite hello-graphql-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Factories
       Paths_hello_graphql
   hs-source-dirs:
       test
@@ -99,19 +120,26 @@ test-suite hello-graphql-test
     , HDBC-session
     , base >=4.7 && <5
     , bytestring
+    , capability
     , data-default-class
+    , exceptions
     , generic-lens
     , hashable
     , haxl
     , hello-graphql
     , microlens
+    , monad-control
     , morpheus-graphql
+    , mtl
     , persistable-record
     , postgresql-pure
+    , relational-query
     , relational-query-HDBC
     , relational-record
     , resource-pool
     , scotty
     , template-haskell
     , text
+    , transformers-base
+    , uuid
   default-language: Haskell2010

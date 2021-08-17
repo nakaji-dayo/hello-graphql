@@ -36,10 +36,15 @@ dependencies:
 - persistable-record
 - relational-record
 - relational-query-HDBC
+- relational-query
 - template-haskell
 - data-default-class
-
-
+- exceptions
+- monad-control
+- transformers-base
+- mtl
+- capability
+- uuid
 
 library:
   source-dirs: src

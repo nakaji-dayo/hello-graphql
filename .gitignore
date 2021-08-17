@@ -1,2 +1,6 @@
 .stack-work/
 *~
+src/Entity/*
+src/Entity.hs
+src/EntityId.hs
+test/Factories.hs

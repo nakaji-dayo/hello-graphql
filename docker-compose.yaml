@@ -1,0 +1,18 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:10.3
+    environment:
+      POSTGRES_USER: api
+      POSTGRES_PASSWORD: passwd
+      POSTGRES_DB: hello-graphql
+    volumes:
+      - postgres-vol:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    command: -c fsync=off
+
+
+volumes:
+  postgres-vol:
+    driver: local
