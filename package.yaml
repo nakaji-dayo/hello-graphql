@@ -45,6 +45,8 @@ dependencies:
 - mtl
 - capability
 - uuid
+- containers
+- pretty-simple
 
 library:
   source-dirs: src

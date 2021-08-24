@@ -22,10 +22,13 @@ import Database.HDBC.Record (runQuery', runInsert)
 import Data.UUID (UUID, toText, toString)
 import Data.UUID.V4 (nextRandom)
 import Data.Text (Text)
+import Control.Concurrent (MVar, withMVar, newMVar)
+import Text.Pretty.Simple
 
 data Context = Context
   { pool       :: Pool Connection
   , connection :: Maybe Connection
+  , lockStdIO  :: MVar ()
   }
 
 
@@ -82,12 +85,17 @@ insertM a b = _withResourceTransaction $ \conn -> liftIO $ runInsert conn a b
 genId :: MonadIO m => m String
 genId = liftIO $ toString <$> nextRandom
 
+debug :: (HasContext m, MonadIO m, Show a) => a -> m ()
+debug x = do
+  lock <- asks @"context" lockStdIO
+  liftIO $ withMVar lock $ \_ -> pPrint x
 
 --
 initialize :: IO Context
 initialize = do
   pool <- createPool'
   let connection = Nothing
+  lockStdIO <- newMVar ()
   pure Context {..}
 
 runAppM :: AppM a -> IO a

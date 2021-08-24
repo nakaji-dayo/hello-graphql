@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9aeae67632a666a92931cd0c06303ec78e138c63b8b3d4a9217795a4dacfadbc
+-- hash: 6660a87b406d15a883b0740fde738a94a9e6712e2aca228a028d64ac92764815
 
 name:           hello-graphql
 version:        0.1.0.0
@@ -33,11 +33,15 @@ library
       Entity
       Entity.Beer
       Entity.Store
+      Entity.StoreBeer
       EntityId
       Haxl
       Lib
+      MHaxl
       MNative
+      Query
       Seed
+      Util
   other-modules:
       Paths_hello_graphql
   hs-source-dirs:
@@ -48,6 +52,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , capability
+    , containers
     , data-default-class
     , exceptions
     , generic-lens
@@ -59,6 +64,7 @@ library
     , mtl
     , persistable-record
     , postgresql-pure
+    , pretty-simple
     , relational-query
     , relational-query-HDBC
     , relational-record
@@ -83,6 +89,7 @@ executable hello-graphql-exe
     , base >=4.7 && <5
     , bytestring
     , capability
+    , containers
     , data-default-class
     , exceptions
     , generic-lens
@@ -95,6 +102,7 @@ executable hello-graphql-exe
     , mtl
     , persistable-record
     , postgresql-pure
+    , pretty-simple
     , relational-query
     , relational-query-HDBC
     , relational-record
@@ -121,6 +129,7 @@ test-suite hello-graphql-test
     , base >=4.7 && <5
     , bytestring
     , capability
+    , containers
     , data-default-class
     , exceptions
     , generic-lens
@@ -133,6 +142,7 @@ test-suite hello-graphql-test
     , mtl
     , persistable-record
     , postgresql-pure
+    , pretty-simple
     , relational-query
     , relational-query-HDBC
     , relational-record
