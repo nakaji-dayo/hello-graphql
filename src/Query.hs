@@ -5,6 +5,7 @@ import           Data.Foldable                          (toList)
 import           Database.Relational
 import           Database.Relational.Projectable.Unsafe (OperatorContext)
 import           Entity
+import qualified Entity.Beer                            as Beer
 import           EntityId
 
 
@@ -14,11 +15,14 @@ q x = relationalQuery' x []
 rel = q . relation
 rel' = q . relation' . placeholder
 
-selectStoreById :: Query StoreId Store
-selectStoreById = rel' $ \ph -> do
-  s <- query store
-  wheres $ s ! #id .=. ph
-  pure s
+selectStores :: Query () Store
+selectStores = rel $ query store
+
+-- selectStoreById :: Query StoreId Store
+-- selectStoreById = rel' $ \ph -> do
+--   s <- query store
+--   wheres $ s ! #id .=. ph
+--   pure s
 
 selectBeersByStoreId :: Query StoreId Beer
 selectBeersByStoreId = rel' $ \ph -> do

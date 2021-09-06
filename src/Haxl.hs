@@ -21,13 +21,15 @@ import           Data.Generics.Labels
 import           Data.Hashable
 import qualified Data.Map               as M
 import           Entity
+import           Entity.Beer            (selectBeer)
+import           Entity.Store           (selectStore)
 import           EntityId
 import           GHC.Generics
 import           Haxl.Core
 import           Lens.Micro
 import           Prelude
 import           Query                  (selectBeersByStoreId,
-                                         selectBeersInSore, selectStoreById)
+                                         selectBeersInSore, selectStores)
 import           Text.Pretty.Simple     (pPrint)
 import           Util                   (groupList)
 
@@ -38,16 +40,21 @@ htest = do
 
 data MyRequest a where
   GetStore :: StoreId -> MyRequest Store
+  GetStores :: MyRequest [Store]
   GetBeersByStore :: StoreId -> MyRequest [Beer]
+  GetBeer :: BeerId -> MyRequest Beer
+  GetStorePv :: StoreId -> MyRequest Int
 
 deriving instance Eq (MyRequest a)
 deriving instance Show (MyRequest a)
 instance ShowP MyRequest where showp = show
 
-
 instance Hashable (MyRequest a) where
   hashWithSalt s (GetStore (StoreId id))        = hashWithSalt s (0 :: Int, id)
   hashWithSalt s (GetBeersByStore (StoreId id)) = hashWithSalt s (1 :: Int, id)
+  hashWithSalt s GetStores = hashWithSalt s (2 :: Int)
+  hashWithSalt s (GetBeer (BeerId id)) = hashWithSalt s (3 :: Int, id)
+  hashWithSalt s (GetStorePv (StoreId id)) = hashWithSalt s (4 :: Int, id)
 
 instance StateKey MyRequest where
   data State MyRequest = MyState ()
@@ -77,7 +84,7 @@ fetcher ctx fetches = do
 
 fetchBeers :: [(StoreId, ResultVar [Beer])] -> AppM ()
 fetchBeers fetches = do
-  debug ("ids", ids)
+  debug ("fetchBeers", ids)
   sbs <- M.assocs . groupList <$> queryM (selectBeersInSore ids) ()
   debug ("sbs", sbs)
   forM_ sbs $ \(sid, beers) -> case lookup sid fetches of
@@ -94,11 +101,23 @@ fetchData :: MyRequest a -> AppM a
 fetchData (GetStore id) = do
   debug "fetch store"
   liftIO $ threadDelay (2 * 1000 * 1000)
-  head <$> queryM selectStoreById id
+  head <$> queryM selectStore id
 fetchData (GetBeersByStore id) = do
   debug "fetch beer"
   liftIO $ threadDelay (4 * 1000 * 1000)
   queryM selectBeersByStoreId id
+fetchData GetStores = do
+  debug "fetch stores"
+  liftIO $ threadDelay (3 * 1000 * 1000)
+  queryM selectStores ()
+fetchData (GetBeer id) = do
+  debug "fetch beer"
+  liftIO $ threadDelay (2 * 1000 * 1000)
+  head <$> queryM selectBeer id
+fetchData (GetStorePv id) = do
+  debug "fetch store pv"
+  liftIO $ threadDelay (5 * 1000 * 1000) -- API request
+  pure 10000
 
 --
 
@@ -107,6 +126,15 @@ getStore id = dataFetch (GetStore id)
 
 getBeersByStore :: StoreId -> Haxl [Beer]
 getBeersByStore id = dataFetch (GetBeersByStore id)
+
+getStores :: Haxl [Store]
+getStores = dataFetch GetStores
+
+getBeer :: BeerId -> Haxl Beer
+getBeer = dataFetch . GetBeer
+
+getStorePv :: StoreId -> Haxl Int
+getStorePv = dataFetch  . GetStorePv
 
 test sid1 sid2 = do
   ctx <- initialize
@@ -120,6 +148,7 @@ test sid1 sid2 = do
 type Haxl = GenHaxl  Context ()
 
 runHaxl' m = do
+  print "runHaxl'"
   ctx <- initialize
   env <- initEnv (stateSet initState stateEmpty) ctx
   runHaxl env m
