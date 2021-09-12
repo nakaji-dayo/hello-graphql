@@ -138,7 +138,7 @@ app = deriveApp rootResolver
 serve2 :: IO ()
 serve2 = scotty 3000 $ post "/api" $ raw =<< (liftIO . runHaxl' . runApp app =<< body)
 
-schema = BS.putStrLn $ toGraphQLDocument (Proxy :: Proxy (RootResolver IO () Query Undefined Undefined))
+schema2 = BS.putStrLn $ toGraphQLDocument (Proxy :: Proxy (RootResolver IO () Query Undefined Undefined))
 
 -- -- runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
 -- runHaxlApp haxlApp input = do
