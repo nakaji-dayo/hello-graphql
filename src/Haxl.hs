@@ -1,7 +1,6 @@
 {-# LANGUAGE ApplicativeDo         #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedLabels      #-}
@@ -111,7 +110,7 @@ fetchData GetStores = do
   liftIO $ threadDelay (3 * 1000 * 1000)
   queryM selectStores ()
 fetchData (GetBeer id) = do
-  debug "fetch beer"
+  debug ("fetch beer", id)
   liftIO $ threadDelay (2 * 1000 * 1000)
   head <$> queryM selectBeer id
 fetchData (GetStorePv id) = do

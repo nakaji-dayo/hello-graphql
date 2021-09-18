@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6660a87b406d15a883b0740fde738a94a9e6712e2aca228a028d64ac92764815
+-- hash: cb85704c653f6e7a0a8de9f432db5375b92ef9e572791e14017c3aedbedacbda
 
 name:           hello-graphql
 version:        0.1.0.0
@@ -37,6 +37,7 @@ library
       EntityId
       Haxl
       Lib
+      MDemo
       MHaxl
       MNative
       Query

@@ -9,7 +9,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-module MHaxl where
+module MDemo(schema3, serve3) where
 
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import           Data.ByteString.Lazy       (ByteString)
@@ -30,9 +30,12 @@ import           Debug.Trace                (traceIO, traceM, traceShowM)
 import qualified Entity                     as E
 import qualified EntityId                   as E
 import           GHC.Generics               (Generic)
-import           Haxl                       (Haxl, MyRequest (GetBeer), getBeer,
-                                             getBeersByStore, getStore,
-                                             getStorePv, getStores, runHaxl')
+-- import           Haxl                       (Haxl, MyRequest (GetBeer), getBeer,
+--                                              getBeersByStore, getStore,
+--                                              getStorePv, getStores, runHaxl')
+import           App
+import           Entity.Beer                (selectBeer)
+import           Entity.Store               (selectStore)
 import           Lens.Micro
 import           Web.Scotty                 (body, post, raw, scotty)
 
@@ -62,20 +65,21 @@ data Beer = Beer
   , ibu  :: Int
   } deriving (Generic, GQLType)
 
+getStore :: E.StoreId -> AppM E.Store
+getStore sid = do
+  debug ("getStore", sid)
+  head <$> queryM selectStore sid
+
+getBeer :: E.BeerId -> AppM E.Beer
+getBeer id = do
+  debug ("getBeer", id)
+  head <$> queryM selectBeer id
+
 newtype BeerArgs = BeerArgs
   { id :: Text
   } deriving (Generic, GQLType)
 
--- storeR :: StoreArgs -> ResolverQ e Haxl Store
--- storeR StoreArgs { id } = do
---   ResolverContext { currentSelection, schema, operation } <- unsafeInternalContext
---   liftEither $ do
---     traceShowM currentSelection
---     s <- getStore sid
---     pure $ Right $ renderStore s
---   where sid = E.StoreId $ unpack id
-
-storeR :: StoreArgs -> ResolverQ e Haxl Store
+storeR :: StoreArgs -> ResolverQ e AppM Store
 storeR StoreArgs { id } = lift $ do
     s <- getStore sid
     pure $ renderStore s
@@ -87,9 +91,9 @@ renderStore x = Store
   , beers = beersR (x ^. #id & E.unStoreId)
   }
 
-beersR :: String -> ResolverQ e Haxl [Beer]
+beersR :: String -> ResolverQ e AppM [Beer]
 beersR id = liftEither $ do
-  bs <- getBeersByStore (E.StoreId id)
+  bs <- undefined -- getBeersByStore (E.StoreId id)
   pure $ Right $ renderBeer <$> bs
 
 renderBeer :: E.Beer -> Beer
@@ -99,22 +103,22 @@ renderBeer x = Beer
   , ibu = x ^. #ibu & fromIntegral
   }
 
-storesR :: ComposedResolver QUERY e Haxl [] Store
-storesR = liftEither $ do
-  xs <- getStores
-  let res = fmap renderStore xs
-  pure $ Right res
+storesR :: ComposedResolver QUERY e AppM [] Store
+storesR = liftEither $ do undefined
+  -- xs <- undefined -- getStores
+  -- let res = fmap renderStore xs
+  -- pure $ Right res
 
-beerR :: BeerArgs -> ResolverQ e Haxl Beer
+beerR :: BeerArgs -> ResolverQ e AppM Beer
 beerR BeerArgs { id } = liftEither $ do
   Right . renderBeer <$> getBeer (E.BeerId $ unpack id)
 
-bestBeerR :: ResolverQ e Haxl Beer
+bestBeerR :: ResolverQ e AppM Beer
 bestBeerR = lift $ do
   let id = "8b219ec6-207e-44ef-9b82-1f403b4c7c93" -- stub
   renderBeer <$> getBeer (E.BeerId id)
 
-queryR :: Query (Resolver QUERY e Haxl)
+queryR :: Query (Resolver QUERY e AppM)
 queryR = Query
          { store = storeR
          , stores = storesR
@@ -122,7 +126,7 @@ queryR = Query
          , bestBeer = bestBeerR
          }
 
-rootResolver :: RootResolver Haxl () Query Undefined Undefined
+rootResolver :: RootResolver AppM () Query Undefined Undefined
 rootResolver =
   RootResolver
     { queryResolver = queryR
@@ -130,16 +134,16 @@ rootResolver =
     , subscriptionResolver = Undefined
     }
 
-app :: App () Haxl
+app :: App () AppM
 app = deriveApp rootResolver
 
 -- gqlApi :: ByteString -> Haxl ByteString
 -- gqlApi = interpreter rootResolver
 
-serve2 :: IO ()
-serve2 = scotty 3000 $ post "/api" $ raw =<< (liftIO . runHaxl' . runApp app =<< body)
+serve3 :: IO ()
+serve3 = scotty 3000 $ post "/api" $ raw =<< (liftIO . runAppM . runApp app =<< body)
 
-schema2 = BS.putStrLn $ toGraphQLDocument (Proxy :: Proxy (RootResolver IO () Query Undefined Undefined))
+schema3 = BS.putStrLn $ toGraphQLDocument (Proxy :: Proxy (RootResolver IO () Query Undefined Undefined))
 
 -- -- runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
 -- runHaxlApp haxlApp input = do
