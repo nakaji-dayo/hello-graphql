@@ -7,8 +7,10 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedLabels      #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 module MDemo(schema3, serve3) where
 
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
@@ -36,86 +38,100 @@ import           GHC.Generics               (Generic)
 import           App
 import           Entity.Beer                (selectBeer)
 import           Entity.Store               (selectStore)
+import           EntityId                   (BeerId, StoreId)
 import           Lens.Micro
+import           Query                      (selectBeersByStoreId, selectStores)
 import           Web.Scotty                 (body, post, raw, scotty)
 
-newtype JinjaId = JinjaId Int
-  deriving (Generic, GQLType)
+data Store m = Store
+  { id    :: StoreId
+  , name  :: Text
+  , beers :: m [Beer]
+  } deriving (Generic, GQLType)
+
+data Beer = Beer
+  { id   :: BeerId
+  , name :: Text
+  , ibu  :: Maybe Int
+  } deriving (Generic, GQLType)
 
 data Query m = Query
   { store    :: StoreArgs -> m (Store m)
-  , stores   :: m [Store m]
+  , stores   :: StoresArgs -> m [Store m]
   , beer     :: BeerArgs -> m Beer
   , bestBeer :: m Beer
   } deriving (Generic, GQLType)
 
-data Store m = Store
-  { id    :: Text             -- Non-Nullable Field
-  , name  :: Text   -- Nullable Field
-  , beers :: m [Beer]
+newtype StoreArgs = StoreArgs
+  { id      :: StoreId
   } deriving (Generic, GQLType)
 
-data StoreArgs = StoreArgs
-  { id      :: Text        -- Required Argument
+data StoresArgs = StoresArgs
+  { name  :: Maybe Text
+  , type' :: Maybe StoreType
   } deriving (Generic, GQLType)
 
-data Beer = Beer
-  { id   :: Text
-  , name :: Text
-  , ibu  :: Int
-  } deriving (Generic, GQLType)
+data StoreType = LiquorStore | Pub
+ deriving (Generic, GQLType)
 
 getStore :: E.StoreId -> AppM E.Store
 getStore sid = do
   debug ("getStore", sid)
   head <$> queryM selectStore sid
 
+getStores :: AppM [E.Store]
+getStores = do
+  debug "getStores"
+  queryM selectStores ()
+
 getBeer :: E.BeerId -> AppM E.Beer
 getBeer id = do
-  debug ("getBeer", id)
+  debug ("[demo] getBeer", id)
   head <$> queryM selectBeer id
 
+
+getBeers :: E.StoreId  -> AppM [E.Beer]
+getBeers id = do
+  debug ("[demo] getBeers", id)
+  queryM selectBeersByStoreId  id
+
+
 newtype BeerArgs = BeerArgs
-  { id :: Text
+  { id :: BeerId
   } deriving (Generic, GQLType)
 
 storeR :: StoreArgs -> ResolverQ e AppM Store
-storeR StoreArgs { id } = lift $ do
-    s <- getStore sid
-    pure $ renderStore s
-  where sid = E.StoreId $ unpack id
+storeR StoreArgs { id } =
+  lift $ renderStore <$> getStore id
 
+renderStore :: E.Store -> Store (Resolver QUERY e AppM)
 renderStore x = Store
-  { id = x ^. #id & E.unStoreId & pack
+  { id = x ^. #id
   , name = x ^. #name & pack
-  , beers = beersR (x ^. #id & E.unStoreId)
+  , beers = beersR (x ^. #id)
   }
 
-beersR :: String -> ResolverQ e AppM [Beer]
-beersR id = liftEither $ do
-  bs <- undefined -- getBeersByStore (E.StoreId id)
-  pure $ Right $ renderBeer <$> bs
+beersR :: StoreId -> ResolverQ e AppM [Beer]
+beersR id =
+  lift $ fmap renderBeer <$> getBeers id
 
 renderBeer :: E.Beer -> Beer
 renderBeer x = Beer
-  { id = x ^. #id & E.unBeerId & pack
+  { id = x ^. #id
   , name = x ^. #name & pack
-  , ibu = x ^. #ibu & fromIntegral
+  , ibu = x ^. #ibu & fromIntegral & Just
   }
 
-storesR :: ComposedResolver QUERY e AppM [] Store
-storesR = liftEither $ do undefined
-  -- xs <- undefined -- getStores
-  -- let res = fmap renderStore xs
-  -- pure $ Right res
+storesR :: StoresArgs -> ComposedResolver QUERY e AppM [] Store
+storesR _ = lift $ fmap renderStore <$> getStores
 
 beerR :: BeerArgs -> ResolverQ e AppM Beer
 beerR BeerArgs { id } = liftEither $ do
-  Right . renderBeer <$> getBeer (E.BeerId $ unpack id)
+  Right . renderBeer <$> getBeer id
 
 bestBeerR :: ResolverQ e AppM Beer
 bestBeerR = lift $ do
-  let id = "8b219ec6-207e-44ef-9b82-1f403b4c7c93" -- stub
+  let id = "b1aa264a-7062-4dce-a3c0-1353ae98f151" -- stub
   renderBeer <$> getBeer (E.BeerId id)
 
 queryR :: Query (Resolver QUERY e AppM)
@@ -143,7 +159,7 @@ app = deriveApp rootResolver
 serve3 :: IO ()
 serve3 = scotty 3000 $ post "/api" $ raw =<< (liftIO . runAppM . runApp app =<< body)
 
-schema3 = BS.putStrLn $ toGraphQLDocument (Proxy :: Proxy (RootResolver IO () Query Undefined Undefined))
+schema3 = BS.putStrLn $ toGraphQLDocument (Proxy @ (RootResolver IO () Query Undefined Undefined))
 
 -- -- runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
 -- runHaxlApp haxlApp input = do

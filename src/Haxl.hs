@@ -83,9 +83,8 @@ fetcher ctx fetches = do
 
 fetchBeers :: [(StoreId, ResultVar [Beer])] -> AppM ()
 fetchBeers fetches = do
-  debug ("fetchBeers", ids)
+  debug ("fetchBeers: store_id in", ids)
   sbs <- M.assocs . groupList <$> queryM (selectBeersInSore ids) ()
-  debug ("sbs", sbs)
   forM_ sbs $ \(sid, beers) -> case lookup sid fetches of
     Just r -> liftIO $ putSuccess r beers
   where ids = fst <$> fetches
@@ -144,7 +143,7 @@ test sid1 sid2 = do
     mapM (\x -> (x,) <$> getBeersByStore (x ^. #id)) [s0, s1]
   pPrint res
 
-type Haxl = GenHaxl  Context ()
+type Haxl = GenHaxl Context ()
 
 runHaxl' m = do
   print "runHaxl'"

@@ -21,7 +21,7 @@ import Control.Monad.Base (MonadBase)
 import Database.HDBC.Record (runQuery', runInsert)
 import Data.UUID (UUID, toText, toString)
 import Data.UUID.V4 (nextRandom)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Control.Concurrent (MVar, withMVar, newMVar)
 import Text.Pretty.Simple
 
@@ -82,8 +82,8 @@ queryM r v = withResource' $ \conn -> liftIO $ runQuery' conn r v
 
 insertM a b = _withResourceTransaction $ \conn -> liftIO $ runInsert conn a b
 
-genId :: MonadIO m => m String
-genId = liftIO $ toString <$> nextRandom
+genId :: MonadIO m => m Text
+genId = liftIO $ pack . toString <$> nextRandom
 
 debug :: (HasContext m, MonadIO m, Show a) => a -> m ()
 debug x = do

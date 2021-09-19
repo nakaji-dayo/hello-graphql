@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedLabels      #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 module MHaxl where
@@ -28,6 +29,7 @@ import           Data.Text                  (Text, pack, unpack)
 import           Data.Traversable           (for)
 import           Debug.Trace                (traceIO, traceM, traceShowM)
 import qualified Entity                     as E
+import           EntityId                   (BeerId, StoreId)
 import qualified EntityId                   as E
 import           GHC.Generics               (Generic)
 import           Haxl                       (Haxl, MyRequest (GetBeer), getBeer,
@@ -36,34 +38,39 @@ import           Haxl                       (Haxl, MyRequest (GetBeer), getBeer,
 import           Lens.Micro
 import           Web.Scotty                 (body, post, raw, scotty)
 
-newtype JinjaId = JinjaId Int
-  deriving (Generic, GQLType)
-
 data Query m = Query
   { store    :: StoreArgs -> m (Store m)
-  , stores   :: m [Store m]
+  , stores   :: StoresArgs -> m [Store m]
   , beer     :: BeerArgs -> m Beer
   , bestBeer :: m Beer
   } deriving (Generic, GQLType)
 
 data Store m = Store
-  { id    :: Text             -- Non-Nullable Field
+  { id    :: StoreId             -- Non-Nullable Field
   , name  :: Text   -- Nullable Field
   , beers :: m [Beer]
   } deriving (Generic, GQLType)
 
-data StoreArgs = StoreArgs
-  { id      :: Text        -- Required Argument
+newtype StoreArgs = StoreArgs
+  { id      :: StoreId        -- Required Argument
   } deriving (Generic, GQLType)
 
+data StoresArgs = StoresArgs
+  { name  :: Maybe Text
+  , type' :: Maybe StoreType
+  } deriving (Generic, GQLType)
+
+data StoreType = LiquorStore | Pub
+ deriving (Generic, GQLType)
+
 data Beer = Beer
-  { id   :: Text
+  { id   :: BeerId
   , name :: Text
   , ibu  :: Int
   } deriving (Generic, GQLType)
 
 newtype BeerArgs = BeerArgs
-  { id :: Text
+  { id :: BeerId
   } deriving (Generic, GQLType)
 
 -- storeR :: StoreArgs -> ResolverQ e Haxl Store
@@ -76,42 +83,38 @@ newtype BeerArgs = BeerArgs
 --   where sid = E.StoreId $ unpack id
 
 storeR :: StoreArgs -> ResolverQ e Haxl Store
-storeR StoreArgs { id } = lift $ do
-    s <- getStore sid
-    pure $ renderStore s
-  where sid = E.StoreId $ unpack id
+storeR StoreArgs { id } =
+  lift $ renderStore <$> getStore id
 
+renderStore :: E.Store -> Store (Resolver QUERY e Haxl)
 renderStore x = Store
-  { id = x ^. #id & E.unStoreId & pack
+  { id = x ^. #id
   , name = x ^. #name & pack
-  , beers = beersR (x ^. #id & E.unStoreId)
+  , beers = beersR (x ^. #id)
   }
 
-beersR :: String -> ResolverQ e Haxl [Beer]
-beersR id = liftEither $ do
-  bs <- getBeersByStore (E.StoreId id)
-  pure $ Right $ renderBeer <$> bs
+beersR :: StoreId -> ResolverQ e Haxl [Beer]
+beersR id =
+  lift $ fmap renderBeer <$> getBeersByStore id
 
 renderBeer :: E.Beer -> Beer
 renderBeer x = Beer
-  { id = x ^. #id & E.unBeerId & pack
+  { id = x ^. #id
   , name = x ^. #name & pack
   , ibu = x ^. #ibu & fromIntegral
   }
 
-storesR :: ComposedResolver QUERY e Haxl [] Store
-storesR = liftEither $ do
-  xs <- getStores
-  let res = fmap renderStore xs
-  pure $ Right res
+storesR :: StoresArgs -> ComposedResolver QUERY e Haxl [] Store
+storesR _ =
+  lift $ fmap renderStore <$> getStores
 
 beerR :: BeerArgs -> ResolverQ e Haxl Beer
 beerR BeerArgs { id } = liftEither $ do
-  Right . renderBeer <$> getBeer (E.BeerId $ unpack id)
+  Right . renderBeer <$> getBeer id
 
 bestBeerR :: ResolverQ e Haxl Beer
 bestBeerR = lift $ do
-  let id = "8b219ec6-207e-44ef-9b82-1f403b4c7c93" -- stub
+  let id = "b1aa264a-7062-4dce-a3c0-1353ae98f151" -- stub
   renderBeer <$> getBeer (E.BeerId id)
 
 queryR :: Query (Resolver QUERY e Haxl)

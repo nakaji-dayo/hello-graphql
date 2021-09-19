@@ -12,9 +12,9 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 import           Data.Data                  (Proxy)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (toGraphQLDocument)
-import           Data.Morpheus.Types        (GQLType, ResolverQ,
-                                             RootResolver (..), Undefined (..),
-                                             liftEither)
+import           Data.Morpheus.Types        (GQLType, QUERY, Resolver,
+                                             ResolverQ, RootResolver (..),
+                                             Undefined (..), liftEither)
 import           Data.Proxy                 (Proxy (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
@@ -63,7 +63,7 @@ jinjasR = do
   liftIO $ putStrLn "jinjasR"
   pure [Jinja 0 "yasaka" "kyoto"]
 
-deitiesR :: (Applicative m, MonadIO m) => ResolverQ  () IO [Deity m]
+deitiesR :: ResolverQ  () IO [Deity (Resolver QUERY () IO)]
 deitiesR = liftEither dbDeities
 
 dbDeities :: (Applicative m, MonadIO m) => IO (Either String [Deity m])

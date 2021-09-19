@@ -96,6 +96,10 @@ cat > $entityId << EOS
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE DerivingVia            #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE UndecidableInstances       #-}
 module EntityId where
 
 import           Data.Default.Class
@@ -109,6 +113,15 @@ import           GHC.Generics
 import           GHC.Int
 import           Language.Haskell.TH             (TypeQ)
 import           Data.Proxy
+import           Data.Morpheus.Types                  (DecodeScalar (..),
+                                                       EncodeScalar (..),
+                                                       GQLType (..))
+import           Data.Text                            (Text, pack)
+import           Data.Morpheus.Kind                   (SCALAR)
+
+instance Default Text where
+  def = pack ""
+
 EOS
 
 
@@ -132,10 +145,12 @@ psql -h localhost -d ${DB} -U api -Atc "$query" \
     | while read tbl clm; do
         entity=`echo $tbl | perl -pe "s/_(.)/\u\1/g; s/^(.)/\u\1/g"`
         cat >> $entityId << EOS
-newtype ${entity}Id = ${entity}Id { un${entity}Id :: String }
+newtype ${entity}Id = ${entity}Id { un${entity}Id :: Text }
   deriving (Generic, Eq, Show, Ord, Default, PersistableWidth
            , LiteralSQL, FromSql SqlValue, ToSql SqlValue
-           , HasColumnConstraint NotNull)
+           , HasColumnConstraint NotNull, EncodeScalar, DecodeScalar)
+instance GQLType ${entity}Id where
+  type KIND ${entity}Id = SCALAR
 
 EOS
 
