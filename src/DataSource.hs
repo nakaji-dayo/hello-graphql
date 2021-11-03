@@ -10,7 +10,6 @@ module DataSource (
 
 import           Data.Pool
 import           Database.HDBC                   (disconnect)
--- import           Database.HDBC.PostgreSQL        (Connection, connectPostgreSQL)
 import           Data.Default.Class
 import           Database.HDBC.PostgreSQL.Pure   as PP (Address (..),
                                                         Config (..), Connection,
@@ -21,8 +20,6 @@ import           Database.HDBC.Schema.Driver     (Driver (getFieldsWithMap),
 import           Database.HDBC.Schema.PostgreSQL (driverPostgreSQL)
 import           EntityId
 import           Language.Haskell.TH             (Dec, Name, Q, TypeQ)
-
-
 
 createPool' :: IO (Pool Connection)
 createPool' = createPool connect' disconnect 1 (realToFrac 60) 20
@@ -39,13 +36,6 @@ connect' =
 connectWithLoadConfig :: IO Connection
 connectWithLoadConfig =
   connect'
-
--- defineEntity :: String -> [Name] -> Q [Dec]
--- defineEntity =
---   defineTableFromDB
---     connectWithLoadConfig
---     (driverPostgreSQL { typeMap = convTypes })
---     "public"
 
 defineEntity :: String -> [Name] -> Q [Dec]
 defineEntity =

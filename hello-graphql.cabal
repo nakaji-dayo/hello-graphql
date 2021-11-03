@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cb85704c653f6e7a0a8de9f432db5375b92ef9e572791e14017c3aedbedacbda
+-- hash: 6e9a3372b83c3082fd789b3584018ca262bf599f9fb4f8edd964912cabe9528d
 
 name:           hello-graphql
 version:        0.1.0.0
@@ -27,7 +27,6 @@ source-repository head
 
 library
   exposed-modules:
-      Api
       App
       DataSource
       Entity
@@ -36,12 +35,11 @@ library
       Entity.StoreBeer
       EntityId
       Haxl
-      Lib
-      MDemo
-      MHaxl
-      MNative
+      HaxlDemo
+      MorpheusDemo
       Query
       Seed
+      Type
       Util
   other-modules:
       Paths_hello_graphql

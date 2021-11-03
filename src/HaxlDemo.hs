@@ -1,6 +1,4 @@
 {-# LANGUAGE ApplicativeDo         #-}
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MonoLocalBinds        #-}
@@ -10,7 +8,7 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-module MHaxl where
+module HaxlDemo where
 
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import           Data.ByteString.Lazy       (ByteString)
@@ -37,50 +35,7 @@ import           Haxl                       (Haxl, MyRequest (GetBeer), getBeer,
                                              getStorePv, getStores, runHaxl')
 import           Lens.Micro
 import           Web.Scotty                 (body, post, raw, scotty)
-
-data Query m = Query
-  { store    :: StoreArgs -> m (Store m)
-  , stores   :: StoresArgs -> m [Store m]
-  , beer     :: BeerArgs -> m Beer
-  , bestBeer :: m Beer
-  } deriving (Generic, GQLType)
-
-data Store m = Store
-  { id    :: StoreId             -- Non-Nullable Field
-  , name  :: Text   -- Nullable Field
-  , beers :: m [Beer]
-  } deriving (Generic, GQLType)
-
-newtype StoreArgs = StoreArgs
-  { id      :: StoreId        -- Required Argument
-  } deriving (Generic, GQLType)
-
-data StoresArgs = StoresArgs
-  { name  :: Maybe Text
-  , type' :: Maybe StoreType
-  } deriving (Generic, GQLType)
-
-data StoreType = LiquorStore | Pub
- deriving (Generic, GQLType)
-
-data Beer = Beer
-  { id   :: BeerId
-  , name :: Text
-  , ibu  :: Int
-  } deriving (Generic, GQLType)
-
-newtype BeerArgs = BeerArgs
-  { id :: BeerId
-  } deriving (Generic, GQLType)
-
--- storeR :: StoreArgs -> ResolverQ e Haxl Store
--- storeR StoreArgs { id } = do
---   ResolverContext { currentSelection, schema, operation } <- unsafeInternalContext
---   liftEither $ do
---     traceShowM currentSelection
---     s <- getStore sid
---     pure $ Right $ renderStore s
---   where sid = E.StoreId $ unpack id
+import Type
 
 storeR :: StoreArgs -> ResolverQ e Haxl Store
 storeR StoreArgs { id } =
@@ -89,8 +44,8 @@ storeR StoreArgs { id } =
 renderStore :: E.Store -> Store (Resolver QUERY e Haxl)
 renderStore x = Store
   { id = x ^. #id
-  , name = x ^. #name & pack
-  , beers = beersR (x ^. #id)
+  , name = x ^. #name . to pack
+  , beers = beersR $ x ^. #id
   }
 
 beersR :: StoreId -> ResolverQ e Haxl [Beer]
@@ -100,8 +55,8 @@ beersR id =
 renderBeer :: E.Beer -> Beer
 renderBeer x = Beer
   { id = x ^. #id
-  , name = x ^. #name & pack
-  , ibu = x ^. #ibu & fromIntegral
+  , name = x ^. #name . to pack
+  , ibu = x ^? #ibu . to fromIntegral
   }
 
 storesR :: StoresArgs -> ComposedResolver QUERY e Haxl [] Store
@@ -114,7 +69,7 @@ beerR BeerArgs { id } = liftEither $ do
 
 bestBeerR :: ResolverQ e Haxl Beer
 bestBeerR = lift $ do
-  let id = "b1aa264a-7062-4dce-a3c0-1353ae98f151" -- stub
+  let id = "b1aa264a-7062-4dce-a3c0-1353ae98f151"
   renderBeer <$> getBeer (E.BeerId id)
 
 queryR :: Query (Resolver QUERY e Haxl)
@@ -136,16 +91,7 @@ rootResolver =
 app :: App () Haxl
 app = deriveApp rootResolver
 
--- gqlApi :: ByteString -> Haxl ByteString
--- gqlApi = interpreter rootResolver
-
 serve2 :: IO ()
 serve2 = scotty 3000 $ post "/api" $ raw =<< (liftIO . runHaxl' . runApp app =<< body)
 
 schema2 = BS.putStrLn $ toGraphQLDocument (Proxy :: Proxy (RootResolver IO () Query Undefined Undefined))
-
--- -- runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
--- runHaxlApp haxlApp input = do
---   let stateStore = stateSet DeityState stateEmpty
---   environment <- initEnv stateStore ()
---   runHaxl environment (runApp haxlApp input)

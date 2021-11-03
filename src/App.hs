@@ -31,7 +31,6 @@ data Context = Context
   , lockStdIO  :: MVar ()
   }
 
-
 newtype AppM a = AppM { unAppM :: Context -> IO a }
   deriving
     ( Functor
@@ -85,12 +84,13 @@ insertM a b = _withResourceTransaction $ \conn -> liftIO $ runInsert conn a b
 genId :: MonadIO m => m Text
 genId = liftIO $ pack . toString <$> nextRandom
 
+-- dev
+
 debug :: (HasContext m, MonadIO m, Show a) => a -> m ()
 debug x = do
   lock <- asks @"context" lockStdIO
   liftIO $ withMVar lock $ \_ -> pPrint x
 
---
 initialize :: IO Context
 initialize = do
   pool <- createPool'

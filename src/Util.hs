@@ -2,7 +2,6 @@ module Util where
 
 import qualified Data.Map as M
 
-
 -- |
 -- map fst of tuple
 -- >>> mapFst (*3) (1,2)
@@ -16,7 +15,6 @@ mapFst f (a, b) = (f a, b)
 -- (1,6)
 mapSnd :: (t -> b) -> (a, t) -> (a, b)
 mapSnd f (a, b) = (a, f b)
-
 
 -- |
 -- construct Data.Map from List.

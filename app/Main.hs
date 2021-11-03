@@ -1,6 +1,12 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
-import Lib
+import MorpheusDemo as M
+import HaxlDemo as H
+import System.Environment
 
 main :: IO ()
-main = someFunc
+main = do
+  getArgs >>= \case
+    "haxl":_ -> H.serve2
+    _ -> M.serve3

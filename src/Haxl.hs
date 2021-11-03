@@ -12,7 +12,7 @@
 module Haxl where
 
 import           App
-import           Control.Concurrent     (forkIO, threadDelay)
+import           Control.Concurrent     (forkIO)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Foldable          (foldl')
@@ -28,14 +28,9 @@ import           Haxl.Core
 import           Lens.Micro
 import           Prelude
 import           Query                  (selectBeersByStoreId,
-                                         selectBeersInSore, selectStores)
+                                         selectBeersInStores, selectStores)
 import           Text.Pretty.Simple     (pPrint)
 import           Util                   (groupList)
-
-
-htest = do
-  env <- emptyEnv ()
-  runHaxl env (pure 42)
 
 data MyRequest a where
   GetStore :: StoreId -> MyRequest Store
@@ -67,8 +62,6 @@ instance DataSourceName MyRequest where
 instance DataSource Context MyRequest where
   fetch _ _ ctx = BackgroundFetch (fetcher ctx)
 
--- myFetch :: State MyRequest -> Flags -> Context -> PerformFetch MyRequest
-
 fetcher ctx fetches = do
   mapM_ (fetchAsync ctx) otherFetches
   unless (null beerFetches) $
@@ -84,7 +77,7 @@ fetcher ctx fetches = do
 fetchBeers :: [(StoreId, ResultVar [Beer])] -> AppM ()
 fetchBeers fetches = do
   debug ("fetchBeers: store_id in", ids)
-  sbs <- M.assocs . groupList <$> queryM (selectBeersInSore ids) ()
+  sbs <- M.assocs . groupList <$> queryM (selectBeersInStores ids) ()
   forM_ sbs $ \(sid, beers) -> case lookup sid fetches of
     Just r -> liftIO $ putSuccess r beers
   where ids = fst <$> fetches
@@ -98,26 +91,19 @@ fetchAsync ctx (BlockedFetch req rvar) =
 fetchData :: MyRequest a -> AppM a
 fetchData (GetStore id) = do
   debug "fetch store"
-  liftIO $ threadDelay (2 * 1000 * 1000)
   head <$> queryM selectStore id
 fetchData (GetBeersByStore id) = do
   debug "fetch beer"
-  liftIO $ threadDelay (4 * 1000 * 1000)
   queryM selectBeersByStoreId id
 fetchData GetStores = do
   debug "fetch stores"
-  liftIO $ threadDelay (3 * 1000 * 1000)
   queryM selectStores ()
 fetchData (GetBeer id) = do
   debug ("fetch beer", id)
-  liftIO $ threadDelay (2 * 1000 * 1000)
   head <$> queryM selectBeer id
 fetchData (GetStorePv id) = do
   debug "fetch store pv"
-  liftIO $ threadDelay (5 * 1000 * 1000) -- API request
   pure 10000
-
---
 
 getStore :: StoreId -> Haxl Store
 getStore id = dataFetch (GetStore id)
@@ -133,15 +119,6 @@ getBeer = dataFetch . GetBeer
 
 getStorePv :: StoreId -> Haxl Int
 getStorePv = dataFetch  . GetStorePv
-
-test sid1 sid2 = do
-  ctx <- initialize
-  env <- initEnv (stateSet initState stateEmpty) ctx
-  res <- runHaxl env $ do
-    s0 <- getStore $ StoreId sid1
-    s1 <- getStore $ StoreId sid2
-    mapM (\x -> (x,) <$> getBeersByStore (x ^. #id)) [s0, s1]
-  pPrint res
 
 type Haxl = GenHaxl Context ()
 
